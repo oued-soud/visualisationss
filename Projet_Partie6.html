@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<head>
+<style>
+
+.rectangle {
+	fill: steelblue;
+}
+.rectangle:hover {
+	fill: orange;
+}
+.axis {
+  font: 10px sans-serif;
+}
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+</style>
+</head>
+<body>
+<div id="drop" align=center></div>
+<script src="d3.js"></script>
+<script>
+
+
+// Définition du cadre du dessin
+var margin = {top: 80, right: 180, bottom: 80, left: 180},
+    width = 960 - margin.left - margin.right,
+    height = 500 - margin.top - margin.bottom;
+
+var svg = d3.select("body").append("svg")
+	.attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+	.append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+
+	var color = ["green", "yellow", "#FOA","blue","#FOO","pink","purple","greenyellow","#EDA","orange",
+				"black","indigo","brown","#AAA"];
+
+// Importation des données
+d3.csv("election.csv", function(error, data){
+	console.log(data)
+	
+// Obtention de la valeur de chaque colonnes numérique (La region est filtré)  
+	var elements = Object.keys(data[0])
+		.filter(function(d){
+			return (d != "Regions");
+		})
+
+// Cette variable recupere les valeur de la colonne par defaut qui est celui du candidat IDY 
+	var selection = elements[0];
+
+// Mise en place des axes de la colonne par défaut
+	var y = d3.scale.linear()
+			.domain([0, d3.max(data, function(d){
+				return +d[selection];
+			})])
+			.range([height, 0]);
+
+	var x = d3.scale.ordinal()
+			.domain(data.map(function(d){ return d.Regions;}))
+			.rangeBands([0, width],0.40);
+			d3.selectAll(".rect").style("fill", function(d,i){return color[i]})
+
+	var xAxis = d3.svg.axis()
+		.scale(x)
+	    .orient("bottom");
+
+	var yAxis = d3.svg.axis()
+		.scale(y)
+	    .orient("left");
+
+	svg.append("g")
+    	.attr("class", "x axis")
+    	.attr("transform", "translate(0," + height + ")")
+    	.call(xAxis)
+    	.selectAll("text")
+    	.style("font-size", "8px")
+      	.style("text-anchor", "end")
+      	.attr("dx", "-.8em")
+      	.attr("dy", "-.55em")
+      	.attr("transform", "rotate(-45)" );
+
+
+ 	svg.append("g")
+    	.attr("class", "y axis")
+    	.call(yAxis);
+
+	
+	var color = ["green", "yellow", "#FOA","blue","#FOO","pink","purple","greenyellow","#EDA","orange",
+				"black","indigo","brown","#AAA"];
+			
+   
+	// Mise en place des diagrammes pour la colonne ou le candidat selectionnée pour la valeur sélectionnée par défaut
+	
+	svg.selectAll("rectangle")
+		.data(data)
+		.enter()
+		.append("rect")
+		.attr("class","rectangle")
+		.attr("width", width/data.length)
+		.attr("height", function(d){
+			return height - y(+d[selection]);
+		})
+		.attr("x", function(d, i){
+			return (width / data.length) * i ;
+		})
+		.attr("y", function(d){
+			return y(+d[selection]);
+		})
+		.append("title")
+		.text(function(d){
+			return d.Regions + " : " + d[selection];
+		})
+        .style("fill","red");
+
+
+	
+	// Creation d'une variable selector qui recupere l'ID de la variable selectionner 
+	var selector = d3.select("#drop")
+    	.append("select")
+    	.attr("id","dropdown")
+    	.on("change", function(d){
+        	selection = document.getElementById("dropdown");
+
+			
+	// Cette suite d'instruction permet de definir les domaines de x et y ainsi que les diagrammes en fonction 
+	// de l'ID choisi
+
+			y.domain([0, d3.max(data, function(d){
+				return +d[selection.value];})]);
+
+        	yAxis.scale(y);
+
+        	d3.selectAll(".rectangle")
+           		.transition()
+	            .attr("height", function(d){
+					return height - y(+d[selection.value]);
+				})
+				.attr("x", function(d, i){
+					return (width / data.length) * i ;
+				})
+				.attr("y", function(d){
+					return y(+d[selection.value]);
+				})
+           		.ease("linear")
+           		.select("title")
+           		.text(function(d){
+           			return d.Regions + " : " + d[selection.value];
+           		})
+				.style("fill","yellow");
+      
+           	d3.selectAll("g.y.axis")
+           		.transition()
+           		.call(yAxis);
+
+         });
+
+	
+    selector.selectAll("option")
+      .data(elements)
+      .enter().append("option")
+      .attr("value", function(d){
+        return d;
+      })
+      .text(function(d){
+        return d;
+      })
+
+});
+
+</script>
+</body>
+</html>
